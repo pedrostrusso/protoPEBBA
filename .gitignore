@@ -1,0 +1,6 @@
+PEBBA.Rproj
+.Rproj.user
+.Rhistory
+.RData
+.travis.yml
+*.sw*
