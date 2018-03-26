@@ -10,11 +10,9 @@ NULL
 #' @param all_genes An object with all genes
 #' @param term2gene A data.frame with enrichment term and genes
 #'
-#' @rdname run_enrich
-#' @examples
-#' # Add example here
-#' print(run_enrich)
-run_enrich <- function(top_genes, all_genes, term2gene){
+#' @keywords internal
+
+.run_enrich <- function(top_genes, all_genes, term2gene){
 	enriched <- as.data.frame(clusterProfiler::enricher(gene = top_genes,
                                     pvalueCutoff = 1,
                                     minGSSize = 1,
@@ -28,7 +26,7 @@ run_enrich <- function(top_genes, all_genes, term2gene){
 
 #' Get cutoff value
 #'
-#' This function provides the cutoff value from FAIRcc
+#' This function provides the cutoff value from PEBBA
 #'
 #' @param deg_list A list of DEGs
 #' @param logFC_col A string indicating the column with log fold
@@ -38,8 +36,9 @@ run_enrich <- function(top_genes, all_genes, term2gene){
 #' @param min_genes Minimum number of genes
 #' @param max_genes Maximum number of genes
 #'
-#' @rdname get_cutoff
-get_cutoff <- function(deg_list, logFC_col, pvalue_col, top_n, min_genes, max_genes){
+#' @keywords internal
+
+.get_cutoff <- function(deg_list, logFC_col, pvalue_col, top_n, min_genes, max_genes){
     dirs <- c("down", "up")
 
     res <- lapply(dirs, function(direction){
@@ -102,11 +101,9 @@ get_cutoff <- function(deg_list, logFC_col, pvalue_col, top_n, min_genes, max_ge
 #' @param p_cut P-value cut
 #' @param order_p P-value ordering
 #'
-#' @rdname get_pathway
-#' @examples
-#' # Add examples here
-#' print(get_pathway)
-get_pathway <- function(merge_p, term2gene, all_genes, deg_list,
+#' @keywords internal
+
+.get_pathway <- function(merge_p, term2gene, all_genes, deg_list,
 						gene_col, logFC_col, pvalue_col, direction,
 						top_n=3000, min_genes=50, max_genes=3000, p_cut=0.01, order_p="first"){
     #Rank based on fold-change
@@ -139,7 +136,7 @@ get_pathway <- function(merge_p, term2gene, all_genes, deg_list,
 
     for (i in seq(from=min_genes, to=max_genes, by=50)) {
     	top_genes  <- as.character(top[1:i, gene_col])
-      	pathG <- run_enrich(top_genes, all_genes, term2gene)
+      	pathG <- .run_enrich(top_genes, all_genes, term2gene)
       	colnames(pathG) <- c("term",  i)
 
 
@@ -182,7 +179,7 @@ get_pathway <- function(merge_p, term2gene, all_genes, deg_list,
                       paste("sum_MinuslogP", "_", direction, sep=""),
                       paste("times_significant", "_", direction, sep=""),
                       paste("FirstTopCut_significant", "_", direction, sep=""),
-                      paste("FAIR_score", "_", direction, sep=""))
+                      paste("PEBBA_score", "_", direction, sep=""))
 
     newList <- list("data.frame" = df, "data.frame" = merge_p2)
     return(newList)
@@ -198,12 +195,10 @@ get_pathway <- function(merge_p, term2gene, all_genes, deg_list,
 #' @param p_cut P-value cut.
 #' @param f_out Output file name.
 #' @param results_dir The path into which results should be saved (Default: "Results").
-#' @rdname save_heatmap
-#' @examples
-#' #Add examples here
-#' print(save_heatmap)
+#'
+#' @keywords internal
 
-save_heatmap <- function(df2heat, replace_p, p_cut, f_out, results_dir){
+.save_heatmap <- function(df2heat, replace_p, p_cut, f_out, results_dir){
     #df2heat = "PathDOWN" or "PathUP"
     #replace_p = "y" (replace P-value > cutoff by 0)
     #f_out = output file name
@@ -211,7 +206,7 @@ save_heatmap <- function(df2heat, replace_p, p_cut, f_out, results_dir){
     #Remove rows that has all values < 2 (Adj P > 0.01)
     #Count how many columns with AdjP > 0.25
 
-	  f_out <- file.path(results_dir, "Heatmaps", f_out)
+	f_out <- file.path(results_dir, "Heatmaps", f_out)
 
     path_cut_p <- log10(p_cut)*-1
     df2heat    <- df2heat[which(rowSums(df2heat > path_cut_p) > 0), ]
@@ -251,9 +246,9 @@ save_heatmap <- function(df2heat, replace_p, p_cut, f_out, results_dir){
 #' @param p_cut P-value cut.
 #' @param direction The direction.
 #'
-#' @rdname cutoff_path
+#' @keywords internal
 
-cutoff_path <- function(path_table, p_cut, direction){
+.cutoff_path <- function(path_table, p_cut, direction){
   df <- data.frame(matrix(0, nrow=ncol(path_table), ncol=0))
   rownames(df) <- colnames(path_table)
 

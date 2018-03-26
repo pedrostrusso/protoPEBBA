@@ -1,11 +1,9 @@
-#' @importFrom CEMiTool read_gmt
 #' @importFrom tools file_path_sans_ext
-#' @importFrom Hmisc capitalize
 NULL
 
-#' FAIRcc analysis
+#' PEBBA analysis
 #'
-#' This function executes the FAIRcc analysis.
+#' This function executes the PEBBA analysis.
 #'
 #' @param file_in The file to execute the analysis
 #' @param gmt_file The name of the gmt file containing terms and genes
@@ -24,22 +22,22 @@ NULL
 #' @param results_dir The path into which results should be saved (Default: "Results").
 #' @param force Whether or not to overrwrite an existing results directory (Default: FALSE).
 #'
-#' @rdname faircc
+#' @rdname pebba
 #' @examples
 #' \dontrun{
-#' # Run FAIRcc analyses
+#' # Run PEBBA analyses
 #' file_in <- "GSE49757_Septic_vs_Healthy.txt"
 #' gmt_file <- "c2.cp.reactome.v6.0.symbols(1).gmt"
-#' faircc(file_in, gmt_file)
+#' pebba(file_in, gmt_file)
 #' }
 #' @export
 
-faircc <- function(file_in, gmt_file, gene_col="Gene.symbol",
-                   logFC_col="logFC", pvalue_col="P.Value",
-				           top_n=3000, min_genes=50, max_genes=3000,
-				           p_cut=0.2, order_p="first", verbose=TRUE,
-				           analysis_name=NULL, results_dir="Results",
-				           force=FALSE){
+pebba <- function(file_in, gmt_file, gene_col="Gene.symbol",
+                  logFC_col="logFC", pvalue_col="P.Value",
+				  top_n=3000, min_genes=50, max_genes=3000,
+				  p_cut=0.2, order_p="first", verbose=TRUE,
+				  analysis_name=NULL, results_dir="Results",
+				  force=FALSE){
 
     # Preparing files and workspace--------------------------------------------
     ## Disable scientifc notation
@@ -62,7 +60,10 @@ faircc <- function(file_in, gmt_file, gene_col="Gene.symbol",
     }
 
     ## Get information from all unique terms
-    term2gene <- CEMiTool::read_gmt(gmt_file)
+    gmt_res <- read_gmt_hier(gmt_file)
+    term2gene <- gmt_res[[1]]
+    path_desc <- gmt_res[[2]]
+
     merge_p  <-  data.frame(unique(term2gene[1]))
 
     deg_list <- read.csv(file_in, header = TRUE, sep = "\t")
@@ -76,49 +77,65 @@ faircc <- function(file_in, gmt_file, gene_col="Gene.symbol",
 
     if(verbose) message("Getting cutoff")
     ## Get info about p-value and log2fc cutoff used on each top segments
-    table_cut <- get_cutoff(deg_list, logFC_col, pvalue_col, top_n, min_genes, max_genes)
+    table_cut <- .get_cutoff(deg_list, logFC_col, pvalue_col, top_n, min_genes, max_genes)
 
     dirs <- c("up", "down", "any")
 
     cut_path_list <- lapply(dirs, function(direction){
         if(verbose) message(direction)
         if(verbose) message("Getting pathways")
-        list_p <- get_pathway(merge_p, term2gene, all_genes,
+        list_p <- .get_pathway(merge_p, term2gene, all_genes,
                             deg_list, gene_col, logFC_col,
                             pvalue_col, direction, top_n,
                             min_genes, max_genes, p_cut, order_p)
 
         df <- list_p[[1]]
         path <- list_p[[2]]
-        f_out <- paste(analysis_name, paste0("Pathways", Hmisc::capitalize(direction), ".pdf"), sep="_")
+        #f_out <- paste(analysis_name, paste0("Pathways", Hmisc::capitalize(direction), ".pdf"), sep="_")
         if(verbose) message("Saving heatmap")
-        save_heatmap(path, replace_p="y", p_cut=p_cut,
-                     f_out=f_out, results_dir=results_dir)
+        #.save_heatmap(path, replace_p="y", p_cut=p_cut,
+        #             f_out=f_out, results_dir=results_dir)
 
         if(verbose) message("Getting pathway cutoff")
-        cut_path <- cutoff_path(path, p_cut, direction)
+        cut_path <- .cutoff_path(path, p_cut, direction)
         res <- list(cut_path, df, path)
         names(res) <- c("cut_path", "df", "path")
         res
     })
     names(cut_path_list) <- dirs
 
+    ## Save heatmaps
+    h_up <- .create_heatmap(cut_path_list, "up", term2gene, path_desc, p_cut)
+    f_out <- paste(analysis_name, "Pathways_UP.html", sep="_")
+    save_iheatmap(p=h_up, filename=f_out)
+    system(paste("mv", f_out, file.path(results_dir, "Heatmaps", f_out)))
+
+    h_down <- .create_heatmap(cut_path_list, "down", term2gene, path_desc, p_cut)
+    f_out <- paste(analysis_name, "Pathways_DOWN.html", sep="_")
+    save_iheatmap(h_down, filename=f_out)
+    system(paste("mv", f_out, file.path(results_dir, "Heatmaps", f_out)))
+
+    h_any <- .create_heatmap(cut_path_list, "any", term2gene, path_desc, p_cut)
+    f_out <- paste(analysis_name, "Pathways_ANY.html", sep="_")
+    save_iheatmap(h_any, filename=f_out)
+    system(paste("mv", f_out, file.path(results_dir, "Heatmaps", f_out)))
+
     # Results -----------------------------------------------------------------
     if(verbose) message("Combining results 1")
-    df_combined <- combine_cut(cut_path_up=cut_path_list$up$cut_path,
+    df_combined <- .combine_cut(cut_path_up=cut_path_list$up$cut_path,
                                cut_path_down=cut_path_list$down$cut_path,
                                cut_path_any=cut_path_list$any$cut_path,
                                table_cut=table_cut)
     if(verbose) message("Combining results 2")
-    df_c <- combine_df(df_up   = cut_path_list$up$df,
+    df_c <- .combine_df(df_up   = cut_path_list$up$df,
                        df_down = cut_path_list$down$df,
                        df_any  = cut_path_list$any$df)
 
     if(verbose) message("Exporting data")
-    export_data(file_in=file_in, df_combined=df_combined, df_c=df_c,
+    .export_data(file_in=file_in, df_combined=df_combined, df_c=df_c,
                 path_up=cut_path_list$up$path,
-                path_down=cut_path_list$up$path,
-                path_any=cut_path_list$up$path,
+                path_down=cut_path_list$down$path,
+                path_any=cut_path_list$any$path,
                 analysis_name=analysis_name,
                 results_dir=results_dir)
 }
@@ -134,12 +151,9 @@ faircc <- function(file_in, gmt_file, gene_col="Gene.symbol",
 #' @param cut_path_any The cut_path_any table
 #' @param table_cut The table_cut parameter
 #'
-#' @rdname combine_cut
-#' @examples
-#' # Add example here
-#' print(combine_cut)
+#' @keywords internal
 
-combine_cut <- function(cut_path_up, cut_path_down, cut_path_any, table_cut){
+.combine_cut <- function(cut_path_up, cut_path_down, cut_path_any, table_cut){
 	  #Combine cut_path_up and cut_path_down
 	  temp_df <- cbind(cut_path_up, cut_path_down, cut_path_any)
 	  temp_df$max <- apply(temp_df, 1, function(x) mean(x[1], x[4]) )
@@ -160,12 +174,9 @@ combine_cut <- function(cut_path_up, cut_path_down, cut_path_any, table_cut){
 #' @param df_down The df_down table
 #' @param df_any The df_any table
 #'
-#' @rdname combine_df
-#' @examples
-#' # Add examples here
-#' print(combine_df)
+#' @keywords internal
 
-combine_df <- function(df_up, df_down, df_any){
+.combine_df <- function(df_up, df_down, df_any){
 
     #Combine df_up and df_down
     df_c <- data.frame(matrix(0, nrow=nrow(df_up), ncol=0))
@@ -209,8 +220,8 @@ combine_df <- function(df_up, df_down, df_any){
 #' This function takes the results of the analyses and returns txt files.
 #'
 #' @param file_in The input file
-#' @param df_combined The result of the combine_cut function
-#' @param df_c The result of the combine_df function
+#' @param df_combined The result of the .combine_cut function
+#' @param df_c The result of the .combine_df function
 #' @param path_up Up pathways
 #' @param path_down Down pathways
 #' @param path_any Any pathways
@@ -218,12 +229,9 @@ combine_df <- function(df_up, df_down, df_any){
 #' @param results_dir The folder into which results should be saved. A subdirectory
 #' 		  called "Heatmaps" will be created inside this folder.
 #'
-#' @rdname export_data
-#' @examples
-#' print(export_data)
-#' @export
+#' @keywords internal
 
-export_data <- function(file_in, df_combined, df_c, path_up,
+.export_data <- function(file_in, df_combined, df_c, path_up,
                         path_down, path_any, analysis_name,
                         results_dir){
 

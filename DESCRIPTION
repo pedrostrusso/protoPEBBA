@@ -8,7 +8,7 @@ Description: A critical step in differentially expressed gene (DEG) analysis is 
     important step is done arbitrarily. Therefore, the FAIRcc package is intended to 
     automatically analyze and determine the ideal threshold cutoff.
 Depends: R (>= 3.4.1)
-Imports: CEMiTool, clusterProfiler, gplots, tools
+Imports: CEMiTool, clusterProfiler, gplots, tools, plotly, iheatmapr
 Suggests: knitr
 License: GPL-3
 Encoding: UTF-8
