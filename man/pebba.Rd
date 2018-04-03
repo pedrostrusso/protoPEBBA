@@ -5,9 +5,9 @@
 \title{PEBBA analysis}
 \usage{
 pebba(file_in, gmt_file, gene_col = "Gene.symbol", logFC_col = "logFC",
-  pvalue_col = "P.Value", top_n = 3000, min_genes = 50,
-  max_genes = 3000, p_cut = 0.2, order_p = "first", verbose = TRUE,
-  analysis_name = NULL, results_dir = "Results", force = FALSE)
+  pvalue_col = "P.Value", min_genes = 100, max_genes = 1500,
+  p_cut = 0.2, verbose = TRUE, analysis_name = NULL,
+  results_dir = "Results", force = FALSE)
 }
 \arguments{
 \item{file_in}{The file to execute the analysis}
@@ -21,15 +21,11 @@ values (Default: "logFC").}
 
 \item{pvalue_col}{A string indicating the column with p-values (Default: "P.Value")}
 
-\item{top_n}{Top number of genes (Default: 3000)}
-
 \item{min_genes}{Minimum number of genes (Default: 50)}
 
 \item{max_genes}{Maximum number of genes (Default: 3000)}
 
 \item{p_cut}{P-value cutoff (Default: 0.2)}
-
-\item{order_p}{P-value ordering (Default:"first")}
 
 \item{verbose}{Logical. If TRUE (default), will display analysis progress messages.}
 
@@ -40,14 +36,15 @@ values (Default: "logFC").}
 
 \item{force}{Whether or not to overrwrite an existing results directory (Default: FALSE).}
 }
+\value{
+Tables and interactive heatmaps with PEBBA results
+}
 \description{
 This function executes the PEBBA analysis.
 }
 \examples{
-\dontrun{
 # Run PEBBA analyses
-file_in <- "GSE49757_Septic_vs_Healthy.txt"
-gmt_file <- "c2.cp.reactome.v6.0.symbols(1).gmt"
-pebba(file_in, gmt_file)
-}
+data(example_data)
+gmt_fname <- system.file("extdata", "pathways.gmt", package = "PEBBA")
+pebba(example_data, gmt_fname)
 }

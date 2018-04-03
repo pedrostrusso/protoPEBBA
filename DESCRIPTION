@@ -1,14 +1,15 @@
 Package: PEBBA
 Title: PEBBA
-Version: 0.0.0.9000
+Version: 0.99.0
 Authors@R: c(person("Pedro", "Russo", email = "pedro.russo@usp.br", role = c("aut")), 
+             person("Cesar", "Prada", email = "cesar.prada@usp.br", role= c("aut")),
              person("Helder", "Nakaya", email = "hnakaya@usp.br", role = c("aut", "cre")))
 Description: A critical step in differentially expressed gene (DEG) analysis is the 
     selection of a threshold for establishing DEG significance. However, many times this 
-    important step is done arbitrarily. Therefore, the FAIRcc package is intended to 
+    important step is done arbitrarily. Therefore, the PEBBA package is intended to 
     automatically analyze and determine the ideal threshold cutoff.
 Depends: R (>= 3.4.1)
-Imports: CEMiTool, clusterProfiler, gplots, tools, plotly, iheatmapr
+Imports: clusterProfiler, gplots, tools, plotly, iheatmapr
 Suggests: knitr
 License: GPL-3
 Encoding: UTF-8

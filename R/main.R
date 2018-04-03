@@ -9,35 +9,45 @@ NULL
 #' @param gmt_file The name of the gmt file containing terms and genes
 #' @param gene_col A string indicating the column with genes (Default: "Gene.symbol")
 #' @param logFC_col A string indicating the column with log fold-change
-#' 		  values (Default: "logFC").
+#'        values (Default: "logFC").
 #' @param pvalue_col A string indicating the column with p-values (Default: "P.Value")
-#' @param top_n Top number of genes (Default: 3000)
 #' @param min_genes Minimum number of genes (Default: 50)
 #' @param max_genes Maximum number of genes (Default: 3000)
 #' @param p_cut P-value cutoff (Default: 0.2)
-#' @param order_p P-value ordering (Default:"first")
 #' @param verbose Logical. If TRUE (default), will display analysis progress messages.
 #' @param analysis_name The name to give to analysis results.
-#' 		  (Defaults to parameter \code{file_in} without the extensions and file path)
+#'        (Defaults to parameter \code{file_in} without the extensions and file path)
 #' @param results_dir The path into which results should be saved (Default: "Results").
 #' @param force Whether or not to overrwrite an existing results directory (Default: FALSE).
 #'
+#' @return Tables and interactive heatmaps with PEBBA results
+#'
 #' @rdname pebba
-#' @examples
-#' \dontrun{
+#' @examples 
 #' # Run PEBBA analyses
-#' file_in <- "GSE49757_Septic_vs_Healthy.txt"
-#' gmt_file <- "c2.cp.reactome.v6.0.symbols(1).gmt"
-#' pebba(file_in, gmt_file)
-#' }
+#' data(example_data)
+#' gmt_fname <- system.file("extdata", "pathways.gmt", package = "PEBBA")
+#' pebba(example_data, gmt_fname)
 #' @export
 
 pebba <- function(file_in, gmt_file, gene_col="Gene.symbol",
                   logFC_col="logFC", pvalue_col="P.Value",
-				  top_n=3000, min_genes=50, max_genes=3000,
-				  p_cut=0.2, order_p="first", verbose=TRUE,
-				  analysis_name=NULL, results_dir="Results",
-				  force=FALSE){
+                  min_genes=100, max_genes=1500,
+                  p_cut=0.2, verbose=TRUE,
+                  analysis_name=NULL, results_dir="Results",
+                  force=FALSE){
+
+    # Validating inputs
+    if(min_genes < 50 | min_genes > 2900){
+        stop("Variable min_genes must be between 50 and 2900 genes")
+    }
+    if(max_genes < 100 | max_genes > 3000){
+        stop("Variable max_genes must be between 100 and 3000 genes")
+    }
+    if(p_cut < 0.00001 | p_cut > 1){
+        stop("Variable p_cut must be between 0.00001 and 1")
+    }
+
 
     # Preparing files and workspace--------------------------------------------
     ## Disable scientifc notation
@@ -77,7 +87,7 @@ pebba <- function(file_in, gmt_file, gene_col="Gene.symbol",
 
     if(verbose) message("Getting cutoff")
     ## Get info about p-value and log2fc cutoff used on each top segments
-    table_cut <- .get_cutoff(deg_list, logFC_col, pvalue_col, top_n, min_genes, max_genes)
+    table_cut <- .get_cutoff(deg_list, logFC_col, pvalue_col, min_genes, max_genes)
 
     dirs <- c("up", "down", "any")
 
@@ -86,15 +96,12 @@ pebba <- function(file_in, gmt_file, gene_col="Gene.symbol",
         if(verbose) message("Getting pathways")
         list_p <- .get_pathway(merge_p, term2gene, all_genes,
                             deg_list, gene_col, logFC_col,
-                            pvalue_col, direction, top_n,
-                            min_genes, max_genes, p_cut, order_p)
+                            pvalue_col, direction, 
+                            min_genes, max_genes, p_cut)
 
         df <- list_p[[1]]
         path <- list_p[[2]]
-        #f_out <- paste(analysis_name, paste0("Pathways", Hmisc::capitalize(direction), ".pdf"), sep="_")
         if(verbose) message("Saving heatmap")
-        #.save_heatmap(path, replace_p="y", p_cut=p_cut,
-        #             f_out=f_out, results_dir=results_dir)
 
         if(verbose) message("Getting pathway cutoff")
         cut_path <- .cutoff_path(path, p_cut, direction)
@@ -154,16 +161,16 @@ pebba <- function(file_in, gmt_file, gene_col="Gene.symbol",
 #' @keywords internal
 
 .combine_cut <- function(cut_path_up, cut_path_down, cut_path_any, table_cut){
-	  #Combine cut_path_up and cut_path_down
-	  temp_df <- cbind(cut_path_up, cut_path_down, cut_path_any)
-	  temp_df$max <- apply(temp_df, 1, function(x) mean(x[1], x[4]) )
-	  temp_df$sum <- apply(temp_df, 1, function(x) mean(x[2], x[5]) )
-	  temp_df$times <- apply(temp_df, 1, function(x) mean(x[3], x[6]) )
-	  colnames(temp_df)[ncol(temp_df)-2] <- "maximum_MinuslogP_meanUPandDOWN"
-	  colnames(temp_df)[ncol(temp_df)-1] <- "sum_MinuslogP_meanUPandDOWN"
-	  colnames(temp_df)[ncol(temp_df)] <- "times_significant_meanUPandDOWN"
-	  df_combined <- cbind(table_cut, temp_df)
-	  return(df_combined)
+    #Combine cut_path_up and cut_path_down
+    temp_df <- cbind(cut_path_up, cut_path_down, cut_path_any)
+    temp_df$max <- apply(temp_df, 1, function(x) mean(x[1], x[4]) )
+    temp_df$sum <- apply(temp_df, 1, function(x) mean(x[2], x[5]) )
+    temp_df$times <- apply(temp_df, 1, function(x) mean(x[3], x[6]) )
+    colnames(temp_df)[ncol(temp_df)-2] <- "maximum_MinuslogP_meanUPandDOWN"
+    colnames(temp_df)[ncol(temp_df)-1] <- "sum_MinuslogP_meanUPandDOWN"
+    colnames(temp_df)[ncol(temp_df)] <- "times_significant_meanUPandDOWN"
+    df_combined <- cbind(table_cut, temp_df)
+    return(df_combined)
 }
 
 #' Combine df_up and df_down
@@ -180,38 +187,38 @@ pebba <- function(file_in, gmt_file, gene_col="Gene.symbol",
 
     #Combine df_up and df_down
     df_c <- data.frame(matrix(0, nrow=nrow(df_up), ncol=0))
-	  rownames(df_c) <- rownames(df_up)
-	  df_c$Pathway   <- rownames(df_c)
-	  df_c$top   <- unlist(lapply(1:nrow(df_up), function(x) mean(df_up[x, 1], df_down[x, 1])))
-	  df_c$max   <- unlist(lapply(1:nrow(df_up), function(x) mean(df_up[x, 2], df_down[x, 2])))
-	  df_c$sum   <- unlist(lapply(1:nrow(df_up), function(x) mean(df_up[x, 3], df_down[x, 3])))
-	  df_c$times <- unlist(lapply(1:nrow(df_up), function(x) mean(df_up[x, 4], df_down[x, 4])))
-	  df_c$first <- unlist(lapply(1:nrow(df_up), function(x) mean(df_up[x, 5], df_down[x, 5])))
-	  df_c$fair  <- unlist(lapply(1:nrow(df_up), function(x) mean(df_up[x, 6], df_down[x, 6])))
+    rownames(df_c) <- rownames(df_up)
+    df_c$Pathway   <- rownames(df_c)
+    df_c$top   <- unlist(lapply(1:nrow(df_up), function(x) mean(df_up[x, 1], df_down[x, 1])))
+    df_c$max   <- unlist(lapply(1:nrow(df_up), function(x) mean(df_up[x, 2], df_down[x, 2])))
+    df_c$sum   <- unlist(lapply(1:nrow(df_up), function(x) mean(df_up[x, 3], df_down[x, 3])))
+    df_c$times <- unlist(lapply(1:nrow(df_up), function(x) mean(df_up[x, 4], df_down[x, 4])))
+    df_c$first <- unlist(lapply(1:nrow(df_up), function(x) mean(df_up[x, 5], df_down[x, 5])))
+    df_c$fair  <- unlist(lapply(1:nrow(df_up), function(x) mean(df_up[x, 6], df_down[x, 6])))
 
-	  df_c$topMin   <- unlist(lapply(1:nrow(df_up), function(x) min(df_up[x, 1], df_down[x, 1])))
-	  df_c$maxMax   <- unlist(lapply(1:nrow(df_up), function(x) max(df_up[x, 2], df_down[x, 2])))
-	  df_c$sumMax   <- unlist(lapply(1:nrow(df_up), function(x) max(df_up[x, 3], df_down[x, 3])))
-	  df_c$timesMax <- unlist(lapply(1:nrow(df_up), function(x) max(df_up[x, 4], df_down[x, 4])))
-	  df_c$firstMin <- unlist(lapply(1:nrow(df_up), function(x) min(df_up[x, 5], df_down[x, 5])))
-	  df_c$fairMax  <- unlist(lapply(1:nrow(df_up), function(x) max(df_up[x, 6], df_down[x, 6])))
+    df_c$topMin   <- unlist(lapply(1:nrow(df_up), function(x) min(df_up[x, 1], df_down[x, 1])))
+    df_c$maxMax   <- unlist(lapply(1:nrow(df_up), function(x) max(df_up[x, 2], df_down[x, 2])))
+    df_c$sumMax   <- unlist(lapply(1:nrow(df_up), function(x) max(df_up[x, 3], df_down[x, 3])))
+    df_c$timesMax <- unlist(lapply(1:nrow(df_up), function(x) max(df_up[x, 4], df_down[x, 4])))
+    df_c$firstMin <- unlist(lapply(1:nrow(df_up), function(x) min(df_up[x, 5], df_down[x, 5])))
+    df_c$fairMax  <- unlist(lapply(1:nrow(df_up), function(x) max(df_up[x, 6], df_down[x, 6])))
 
-	  colnames(df_c) <- c("Pathways",
-	                 paste("TopCut_highestMinuslogP", "_", "meanUPandDOWN", sep=""),
-	                 paste("maximum_MinuslogP", "_", "meanUPandDOWN", sep=""),
-	                 paste("sum_MinuslogP", "_", "meanUPandDOWN", sep=""),
-	                 paste("times_significant", "_", "meanUPandDOWN", sep=""),
-	                 paste("FirstTopCut_significant", "_", "meanUPandDOWN", sep=""),
-	                 paste("FAIR_score", "_", "meanUPandDOWN", sep=""),
-	                 paste("TopCut_highestMinuslogP", "_", "minUPandDOWN", sep=""),
-	                 paste("maximum_MinuslogP", "_", "maxUPandDOWN", sep=""),
-	                 paste("sum_MinuslogP", "_", "maxUPandDOWN", sep=""),
-	                 paste("times_significant", "_", "maxUPandDOWN", sep=""),
-	                 paste("FirstTopCut_significant", "_", "minUPandDOWN", sep=""),
-	                 paste("FAIR_score", "_", "maxUPandDOWN", sep=""))
+    colnames(df_c) <- c("Pathways",
+                     paste("TopCut_highestMinuslogP", "_", "meanUPandDOWN", sep=""),
+                     paste("maximum_MinuslogP", "_", "meanUPandDOWN", sep=""),
+                     paste("sum_MinuslogP", "_", "meanUPandDOWN", sep=""),
+                     paste("times_significant", "_", "meanUPandDOWN", sep=""),
+                     paste("FirstTopCut_significant", "_", "meanUPandDOWN", sep=""),
+                     paste("FAIR_score", "_", "meanUPandDOWN", sep=""),
+                     paste("TopCut_highestMinuslogP", "_", "minUPandDOWN", sep=""),
+                     paste("maximum_MinuslogP", "_", "maxUPandDOWN", sep=""),
+                     paste("sum_MinuslogP", "_", "maxUPandDOWN", sep=""),
+                     paste("times_significant", "_", "maxUPandDOWN", sep=""),
+                     paste("FirstTopCut_significant", "_", "minUPandDOWN", sep=""),
+                     paste("FAIR_score", "_", "maxUPandDOWN", sep=""))
 
-	  df_c <- cbind(df_c, df_up, df_down, df_any)
-	  return(df_c)
+    df_c <- cbind(df_c, df_up, df_down, df_any)
+    return(df_c)
 }
 
 
@@ -227,41 +234,40 @@ pebba <- function(file_in, gmt_file, gene_col="Gene.symbol",
 #' @param path_any Any pathways
 #' @param analysis_name The name to be given to the analysis (Default: "Analysis1").
 #' @param results_dir The folder into which results should be saved. A subdirectory
-#' 		  called "Heatmaps" will be created inside this folder.
+#'           called "Heatmaps" will be created inside this folder.
 #'
 #' @keywords internal
 
 .export_data <- function(file_in, df_combined, df_c, path_up,
                         path_down, path_any, analysis_name,
                         results_dir){
+    # Exporting datasets
 
-	  # Exporting datasets
+    f_out <- paste(analysis_name, "Cutoffs.txt", sep="_")
+    write.table(df_combined, file = file.path(results_dir, "Tables", f_out),
+                sep = "\t", row.names = FALSE)
 
-	  f_out <- paste(analysis_name, "Cutoffs.txt", sep="_")
-	  write.table(df_combined, file = file.path(results_dir, "Tables", f_out),
-	              sep = "\t", row.names = FALSE)
+    f_out <- paste(analysis_name, "PathwayMetrics.txt", sep="_")
+    write.table(df_c, file = file.path(results_dir, "Tables", f_out),
+                sep = "\t",row.names = FALSE)
 
-	  f_out <- paste(analysis_name, "PathwayMetrics.txt", sep="_")
-	  write.table(df_c, file = file.path(results_dir, "Tables", f_out),
-	              sep = "\t",row.names = FALSE)
+    pathways <- as.character(rownames(path_up))
+    path_up <- cbind(pathways, path_up)
+    f_out <- paste(analysis_name, "PathwayUp.txt", sep="_")
+    write.table(path_up, file = file.path(results_dir, "Tables", f_out),
+                sep = "\t", row.names = FALSE)
 
-	  pathways <- as.character(rownames(path_up))
-	  path_up <- cbind(pathways, path_up)
-	  f_out <- paste(analysis_name, "PathwayUp.txt", sep="_")
-	  write.table(path_up, file = file.path(results_dir, "Tables", f_out),
-	              sep = "\t", row.names = FALSE)
+    pathways <- as.character(rownames(path_down))
+    path_down <- cbind(pathways, path_down)
+    f_out <- paste(analysis_name, "PathwayDown.txt", sep="_")
+    write.table(path_down, file = file.path(results_dir, "Tables", f_out),
+                sep = "\t", row.names = FALSE)
 
-	  pathways <- as.character(rownames(path_down))
-	  path_down <- cbind(pathways, path_down)
-	  f_out <- paste(analysis_name, "PathwayDown.txt", sep="_")
-	  write.table(path_down, file = file.path(results_dir, "Tables", f_out),
-	              sep = "\t", row.names = FALSE)
-
-	  pathways <- as.character(rownames(path_any))
-	  path_any  <- cbind(pathways, path_any)
-	  f_out <- paste(analysis_name, "PathwayAny.txt", sep="_")
-	  write.table(path_any, file = file.path(results_dir, "Tables", f_out),
-	              sep = "\t", row.names = FALSE)
+    pathways <- as.character(rownames(path_any))
+    path_any  <- cbind(pathways, path_any)
+    f_out <- paste(analysis_name, "PathwayAny.txt", sep="_")
+    write.table(path_any, file = file.path(results_dir, "Tables", f_out),
+                sep = "\t", row.names = FALSE)
 }
 
 

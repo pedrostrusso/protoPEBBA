@@ -13,14 +13,14 @@ NULL
 #' @keywords internal
 
 .run_enrich <- function(top_genes, all_genes, term2gene){
-	enriched <- as.data.frame(clusterProfiler::enricher(gene = top_genes,
+    enriched <- as.data.frame(clusterProfiler::enricher(gene = top_genes,
                                     pvalueCutoff = 1,
                                     minGSSize = 1,
                                     universe = all_genes,
                                     TERM2GENE = term2gene,
                                     qvalueCutoff = 1,
                                     maxGSSize = 100))[, c(1, 6)]
-	return(enriched)
+    return(enriched)
 }
 
 
@@ -30,15 +30,14 @@ NULL
 #'
 #' @param deg_list A list of DEGs
 #' @param logFC_col A string indicating the column with log fold
-#' 		  change values
+#'           change values
 #' @param pvalue_col A string indicating the column with p-values
-#' @param top_n Top N something
 #' @param min_genes Minimum number of genes
 #' @param max_genes Maximum number of genes
 #'
 #' @keywords internal
 
-.get_cutoff <- function(deg_list, logFC_col, pvalue_col, top_n, min_genes, max_genes){
+.get_cutoff <- function(deg_list, logFC_col, pvalue_col, min_genes, max_genes){
     dirs <- c("down", "up")
 
     res <- lapply(dirs, function(direction){
@@ -47,7 +46,7 @@ NULL
 
     top <- deg_list[head(order(deg_list[, logFC_col],
                                decreasing=decreasing),
-                         n=top_n),
+                         n=max_genes),
                     c(logFC_col, pvalue_col)]
     #Add pi_value
     top$pi_value <- abs(top[, logFC_col]) * -log10(top[, pvalue_col])
@@ -95,17 +94,15 @@ NULL
 #' @param logFC_col A string indicating the column with log fold-change values
 #' @param pvalue_col A string indicating the column with p-values
 #' @param direction The direction. One of "up", "down" or "any"
-#' @param top_n Top number of genes
 #' @param min_genes Minimum number of genes
 #' @param max_genes Maximum number of genes
 #' @param p_cut P-value cut
-#' @param order_p P-value ordering
 #'
 #' @keywords internal
 
 .get_pathway <- function(merge_p, term2gene, all_genes, deg_list,
-						gene_col, logFC_col, pvalue_col, direction,
-						top_n=3000, min_genes=50, max_genes=3000, p_cut=0.01, order_p="first"){
+                        gene_col, logFC_col, pvalue_col, direction,
+                        min_genes=50, max_genes=3000, p_cut=0.01){
     #Rank based on fold-change
     #direction = "up" or "down"
     #Top number of genes
@@ -119,14 +116,14 @@ NULL
     #Order Merge Table by
     #order_p = "NG", "p", "P", "first", "times", "ES3"
     if(tolower(direction) == "up"){
-    	top <- deg_list[head(order(deg_list[, logFC_col], decreasing=TRUE), n=top_n), ]
+        top <- deg_list[head(order(deg_list[, logFC_col], decreasing=TRUE), n=max_genes), ]
     }else if(tolower(direction) == "down"){
-    	top <- deg_list[head(order(deg_list[, logFC_col], decreasing=FALSE), n=top_n), ]
+        top <- deg_list[head(order(deg_list[, logFC_col], decreasing=FALSE), n=max_genes), ]
     }else if(tolower(direction) == "any"){
-    	top <- deg_list[head(order(abs(deg_list[, logFC_col]), decreasing=FALSE), n=top_n), ]
+        top <- deg_list[head(order(abs(deg_list[, logFC_col]), decreasing=FALSE), n=max_genes), ]
     }else{
-		stop("Invalid direction argument")
-	}
+        stop("Invalid direction argument")
+    }
 
     # add pi_value
     top$pi_value = abs(top[, logFC_col])*-log10(top[, pvalue_col])
@@ -135,16 +132,16 @@ NULL
     top <- top[order(top$pi_value, decreasing=TRUE), ]
 
     for (i in seq(from=min_genes, to=max_genes, by=50)) {
-    	top_genes  <- as.character(top[1:i, gene_col])
-      	pathG <- .run_enrich(top_genes, all_genes, term2gene)
-      	colnames(pathG) <- c("term",  i)
+        top_genes  <- as.character(top[1:i, gene_col])
+          pathG <- .run_enrich(top_genes, all_genes, term2gene)
+          colnames(pathG) <- c("term",  i)
 
 
-      	merge_p <- merge(merge_p,
+          merge_p <- merge(merge_p,
                       pathG,
                       by="term",
                       all=TRUE)
-      	merge_p[is.na(merge_p)] <- 1
+          merge_p[is.na(merge_p)] <- 1
     }
     rownames(merge_p) <- merge_p[, 1]
     merge_p           <- merge_p[, -1]
@@ -172,7 +169,7 @@ NULL
     df$ES3 <- (1 - exp(-df$p))/(1 + 0.1*sqrt(df$NG))
 
     #order
-    merge_p2 <- merge_p2[order(df[, order_p], decreasing=TRUE), ]
+    merge_p2 <- merge_p2[order(df[, "first"], decreasing=TRUE), ]
 
     colnames(df) <- c(paste("TopCut_highestMinuslogP", "_", direction, sep=""),
                       paste("maximum_MinuslogP", "_", direction, sep=""),
@@ -186,57 +183,6 @@ NULL
 }
 
 
-#' Save heatmap
-#'
-#' This function is used to save heatmaps
-#'
-#' @param df2heat Object to be turned to heatmap.
-#' @param replace_p Replace P.
-#' @param p_cut P-value cut.
-#' @param f_out Output file name.
-#' @param results_dir The path into which results should be saved (Default: "Results").
-#'
-#' @keywords internal
-
-.save_heatmap <- function(df2heat, replace_p, p_cut, f_out, results_dir){
-    #df2heat = "PathDOWN" or "PathUP"
-    #replace_p = "y" (replace P-value > cutoff by 0)
-    #f_out = output file name
-
-    #Remove rows that has all values < 2 (Adj P > 0.01)
-    #Count how many columns with AdjP > 0.25
-
-	f_out <- file.path(results_dir, "Heatmaps", f_out)
-
-    path_cut_p <- log10(p_cut)*-1
-    df2heat    <- df2heat[which(rowSums(df2heat > path_cut_p) > 0), ]
-
-    if (replace_p == "y")
-    {
-    	df2heat[df2heat < path_cut_p] <- 0
-    }
-
-    pairs_breaks <- seq(0, 3, length.out=30)
-    mycol  <- gplots::colorpanel(n=29, low="white", mid="yellow", high="red")
-
-    row_distance = dist(df2heat, method = "manhattan")
-    row_cluster  = hclust(row_distance, method = "average")
-
-    pdf(f_out, height=10, width=10)
-    par(oma=c(3, 1, 2, 15)) #par(mar=c(bottom, left, top, right))
-    gplots::heatmap.2(as.matrix(df2heat),
-          Rowv = "none",
-          #Rowv = as.dendrogram(row_cluster),
-          Colv = "none",
-          trace="none",
-          breaks=pairs_breaks,
-          dendrogram="none",
-          col=mycol,
-          cexRow=0.5) #Adjust the text size
-
-  dev.off()
-}
-
 #' Cutoff pathway
 #'
 #' This function takes a table and returns a dataframe with
@@ -249,19 +195,19 @@ NULL
 #' @keywords internal
 
 .cutoff_path <- function(path_table, p_cut, direction){
-  df <- data.frame(matrix(0, nrow=ncol(path_table), ncol=0))
-  rownames(df) <- colnames(path_table)
+    df <- data.frame(matrix(0, nrow=ncol(path_table), ncol=0))
+    rownames(df) <- colnames(path_table)
 
-  df$MaxR  <- as.numeric(apply(path_table, 2, max))
-  df$SumR  <- as.numeric(apply(path_table, 2, sum))
-  path_cut_p <- log10(p_cut)*-1
-  #How many pathways above path_cut_p (freq)
-  df$times <- as.numeric(apply(path_table, 2,
+    df$MaxR  <- as.numeric(apply(path_table, 2, max))
+    df$SumR  <- as.numeric(apply(path_table, 2, sum))
+    path_cut_p <- log10(p_cut)*-1
+    #How many pathways above path_cut_p (freq)
+    df$times <- as.numeric(apply(path_table, 2,
                                function(x) length(which(x > path_cut_p))))/nrow(path_table)
-  colnames(df) <- c(paste("maximum_MinuslogP", "_", direction, sep=""),
+    colnames(df) <- c(paste("maximum_MinuslogP", "_", direction, sep=""),
                     paste("sum_MinuslogP", "_", direction, sep=""),
                     paste("times_significant", "_", direction, sep=""))
-  return(df)
+    return(df)
 }
 
 
