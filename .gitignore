@@ -4,3 +4,4 @@ PEBBA.Rproj
 .RData
 .travis.yml
 *.sw*
+inst/doc

@@ -10,9 +10,11 @@ Description: A critical step in differentially expressed gene (DEG) analysis is 
     automatically analyze and determine the ideal threshold cutoff.
 Depends: R (>= 3.4.1)
 Imports: clusterProfiler, gplots, tools, plotly, iheatmapr
-Suggests: knitr
+Suggests: knitr,
+    rmarkdown
 License: GPL-3
 Encoding: UTF-8
 biocViews: Pathways, DifferentialExpression
 LazyData: true
 RoxygenNote: 6.0.1
+VignetteBuilder: knitr

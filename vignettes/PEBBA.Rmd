@@ -1,0 +1,37 @@
+---
+title: "PEBBA"
+output: rmarkdown::html_vignette
+fig_caption: yes
+vignette: >
+  %\VignetteIndexEntry{PEBBA}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+#Introduction
+
+PEBBA is an enrichment pipeline based on over representation analysis (ORA). It first ranks differentially expressed genes by their $\pi$ values, and then selects the top ten genes, which are used in the ORA, and the genes' enrichment to pathways are noted. At every run, more genes are added and the ORA scores are computed. At the end of the analysis, the whole list of DEGs is run, and users can obtain a profile of how pathways are being enriched with increasing numbers of selected DEGs. As a result, the user will have the enrichment pathways by the number of ranked DEGs sorted by the p-value of the hypergeometric test and then be able to select the cutoff by the number of the significant pathway.
+
+![Figure 1 - PEBBA workflow](pebba.png)
+
+# Basic usage
+
+PEBBA is easily run using only the `pebba` function:  
+
+```{r}
+# Get an example data set to apply PEBBA:
+library(PEBBA)
+data(example_data)
+# Use example pathway gmt file:
+gmt_fname <- system.file("extdata", "pathways.gmt", package="PEBBA")
+pebba(example_data, gmt_fname)
+```
+
+That's it! PEBBA will create a folder in the working directory containing tables with the enrichment results and interactive heatmaps which can be used to obtain different information about each pathway.
