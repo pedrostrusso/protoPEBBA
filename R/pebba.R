@@ -58,7 +58,7 @@ NULL
         for (i in seq(from=min_genes, to=max_genes, by=50)) {
             top_genes  <- top[1:i, ]
             minFC <- min(abs(top_genes[, 1]))
-            #maxP  <- max(top_genes[, 2])
+            maxP  <- max(top_genes[, 2])
             minP  <- -log10(maxP)
             minPi <- min(top_genes[i, 3])
             rowX  <- data.frame(minFC=minFC, minP=minP, minPi=minPi)

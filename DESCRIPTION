@@ -7,7 +7,7 @@ Authors@R: c(person("Pedro", "Russo", email = "pedro.russo@usp.br", role = c("au
 Description: A critical step in differentially expressed gene (DEG) analysis is the 
     selection of a threshold for establishing DEG significance. However, many times this 
     important step is done arbitrarily. Therefore, the PEBBA package is intended to 
-    automatically analyze and determine the ideal threshold cutoff.
+    automatically analyze threshold cutoffs.
 Depends: R (>= 3.4.1)
 Imports: clusterProfiler, gplots, tools, plotly, iheatmapr
 Suggests: knitr,
