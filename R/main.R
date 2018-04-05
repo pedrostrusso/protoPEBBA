@@ -5,7 +5,7 @@ NULL
 #'
 #' This function executes the PEBBA analysis.
 #'
-#' @param file_in The file to execute the analysis
+#' @param file_in The file or data.frame to execute the analysis on
 #' @param gmt_file The name of the gmt file containing terms and genes
 #' @param gene_col A string indicating the column with genes (Default: "Gene.symbol")
 #' @param logFC_col A string indicating the column with log fold-change
@@ -16,7 +16,8 @@ NULL
 #' @param p_cut P-value cutoff (Default: 0.2)
 #' @param verbose Logical. If TRUE (default), will display analysis progress messages.
 #' @param analysis_name The name to give to analysis results.
-#'        (Defaults to parameter \code{file_in} without the extensions and file path)
+#'        (If NULL, defaults to parameter \code{file_in} without the extensions and file path;
+#'        if a data.frame, defaults to 'PEBBA_analysis' when left NULL)
 #' @param results_dir The path into which results should be saved (Default: "Results").
 #' @param force Whether or not to overrwrite an existing results directory (Default: FALSE).
 #'
@@ -26,8 +27,8 @@ NULL
 #' @examples
 #' # Run PEBBA analyses
 #' data(example_data)
-#' gmt_fname <- system.file("extdata", "pathways.gmt", package = "PEBBA")
-#' pebba(example_data, gmt_fname)
+#' gmt_file <- system.file("extdata", "pathways.gmt", package = "PEBBA")
+#' pebba(example_data, gmt_file)
 #' @export
 
 pebba <- function(file_in, gmt_file, gene_col="Gene.symbol",
@@ -49,7 +50,7 @@ pebba <- function(file_in, gmt_file, gene_col="Gene.symbol",
     }
 
 
-    # Preparing files and workspace--------------------------------------------
+    # Preparing files and workspace
     ## Disable scientifc notation
     options(scipen=999)
 
@@ -74,7 +75,7 @@ pebba <- function(file_in, gmt_file, gene_col="Gene.symbol",
     term2gene <- gmt_res[[1]]
     path_desc <- gmt_res[[2]]
 
-    merge_p  <-  data.frame(unique(term2gene[1]))
+    merge_p <- data.frame(unique(term2gene[1]))
 
     if(is.character(file_in)){
         deg_list <- read.csv(file_in, header = TRUE, sep = "\t")
@@ -113,7 +114,6 @@ pebba <- function(file_in, gmt_file, gene_col="Gene.symbol",
 
         df <- list_p[[1]]
         path <- list_p[[2]]
-        if(verbose) message("Saving heatmap")
 
         if(verbose) message("Getting pathway cutoff")
         cut_path <- .cutoff_path(path, p_cut, direction)
@@ -124,20 +124,13 @@ pebba <- function(file_in, gmt_file, gene_col="Gene.symbol",
     names(cut_path_list) <- dirs
 
     ## Save heatmaps
-    h_up <- .create_heatmap(cut_path_list, "up", term2gene, path_desc, p_cut)
-    f_out <- paste(analysis_name, "Pathways_UP.html", sep="_")
-    save_iheatmap(p=h_up, filename=f_out)
-    system(paste("mv", f_out, file.path(results_dir, "Heatmaps", f_out)))
-
-    h_down <- .create_heatmap(cut_path_list, "down", term2gene, path_desc, p_cut)
-    f_out <- paste(analysis_name, "Pathways_DOWN.html", sep="_")
-    save_iheatmap(h_down, filename=f_out)
-    system(paste("mv", f_out, file.path(results_dir, "Heatmaps", f_out)))
-
-    h_any <- .create_heatmap(cut_path_list, "any", term2gene, path_desc, p_cut)
-    f_out <- paste(analysis_name, "Pathways_ANY.html", sep="_")
-    save_iheatmap(h_any, filename=f_out)
-    system(paste("mv", f_out, file.path(results_dir, "Heatmaps", f_out)))
+    if(verbose) message("Saving heatmaps")
+    sapply(dirs, function(direction){
+        heat <- .create_heatmap(cut_path_list, direction, term2gene, path_desc, p_cut)
+        f_out <- paste(analysis_name, "Pathways", paste0(direction, ".html"), sep="_")
+        save_iheatmap(heat, filename=f_out)
+        system(paste("mv", f_out, file.path(results_dir, "Heatmaps", f_out)))
+    })
 
     # Results -----------------------------------------------------------------
     if(verbose) message("Combining results 1")
@@ -158,7 +151,6 @@ pebba <- function(file_in, gmt_file, gene_col="Gene.symbol",
                 analysis_name=analysis_name,
                 results_dir=results_dir)
 }
-##################################################
 
 #' Combine cut results
 #'
@@ -171,6 +163,7 @@ pebba <- function(file_in, gmt_file, gene_col="Gene.symbol",
 #' @param table_cut The table_cut parameter
 #'
 #' @keywords internal
+#' @noRd
 
 .combine_cut <- function(cut_path_up, cut_path_down, cut_path_any, table_cut){
     #Combine cut_path_up and cut_path_down
@@ -194,6 +187,7 @@ pebba <- function(file_in, gmt_file, gene_col="Gene.symbol",
 #' @param df_any The df_any table
 #'
 #' @keywords internal
+#' @noRd
 
 .combine_df <- function(df_up, df_down, df_any){
 
@@ -216,18 +210,18 @@ pebba <- function(file_in, gmt_file, gene_col="Gene.symbol",
     df_c$fairMax  <- unlist(lapply(1:nrow(df_up), function(x) max(df_up[x, 6], df_down[x, 6])))
 
     colnames(df_c) <- c("Pathways",
-                     paste("TopCut_highestMinuslogP", "_", "meanUPandDOWN", sep=""),
-                     paste("maximum_MinuslogP", "_", "meanUPandDOWN", sep=""),
-                     paste("sum_MinuslogP", "_", "meanUPandDOWN", sep=""),
-                     paste("times_significant", "_", "meanUPandDOWN", sep=""),
-                     paste("FirstTopCut_significant", "_", "meanUPandDOWN", sep=""),
-                     paste("FAIR_score", "_", "meanUPandDOWN", sep=""),
-                     paste("TopCut_highestMinuslogP", "_", "minUPandDOWN", sep=""),
-                     paste("maximum_MinuslogP", "_", "maxUPandDOWN", sep=""),
-                     paste("sum_MinuslogP", "_", "maxUPandDOWN", sep=""),
-                     paste("times_significant", "_", "maxUPandDOWN", sep=""),
-                     paste("FirstTopCut_significant", "_", "minUPandDOWN", sep=""),
-                     paste("FAIR_score", "_", "maxUPandDOWN", sep=""))
+                     "TopCut_highestMinuslogP_meanUPandDOWN",
+                     "maximum_MinuslogP_meanUPandDOWN",
+                     "sum_MinuslogP_meanUPandDOWN",
+                     "times_significant_meanUPandDOWN",
+                     "FirstTopCut_significant_meanUPandDOWN",
+                     "PEBBA_score_meanUPandDOWN",
+                     "TopCut_highestMinuslogP_minUPandDOWN",
+                     "maximum_MinuslogP_maxUPandDOWN",
+                     "sum_MinuslogP_maxUPandDOWN",
+                     "times_significant_maxUPandDOWN",
+                     "FirstTopCut_significant_minUPandDOWN",
+                     "PEBBA_score_maxUPandDOWN")
 
     df_c <- cbind(df_c, df_up, df_down, df_any)
     return(df_c)
@@ -249,6 +243,7 @@ pebba <- function(file_in, gmt_file, gene_col="Gene.symbol",
 #'           called "Heatmaps" will be created inside this folder.
 #'
 #' @keywords internal
+#' @noRd
 
 .export_data <- function(file_in, df_combined, df_c, path_up,
                         path_down, path_any, analysis_name,

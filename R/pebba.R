@@ -11,6 +11,7 @@ NULL
 #' @param term2gene A data.frame with enrichment term and genes
 #'
 #' @keywords internal
+#' @noRd
 
 .run_enrich <- function(top_genes, all_genes, term2gene){
     enriched <- as.data.frame(clusterProfiler::enricher(gene = top_genes,
@@ -36,6 +37,7 @@ NULL
 #' @param max_genes Maximum number of genes
 #'
 #' @keywords internal
+#' @noRd
 
 .get_cutoff <- function(deg_list, logFC_col, pvalue_col, min_genes, max_genes){
     dirs <- c("down", "up")
@@ -52,14 +54,14 @@ NULL
         top$pi_value <- abs(top[, logFC_col]) * -log10(top[, pvalue_col])
         #Order pi_value
         top <- top[order(top$pi_value, decreasing=TRUE), ]
-        df1 <- data.frame(matrix(0, nrow=0, ncol=4))
+        df1 <- data.frame(minFC=numeric(0), minP=numeric(0), minPi=numeric(0))
         for (i in seq(from=min_genes, to=max_genes, by=50)) {
             top_genes  <- top[1:i, ]
             minFC <- min(abs(top_genes[, 1]))
-            maxP  <- max(top_genes[, 2])
+            #maxP  <- max(top_genes[, 2])
             minP  <- -log10(maxP)
             minPi <- min(top_genes[i, 3])
-            rowX  <- c(minFC, minP, minPi)
+            rowX  <- data.frame(minFC=minFC, minP=minP, minPi=minPi)
             df1 <- rbind(df1,rowX)
         }
         df1
@@ -99,22 +101,12 @@ NULL
 #' @param p_cut P-value cut
 #'
 #' @keywords internal
+#' @noRd
 
 .get_pathway <- function(merge_p, term2gene, all_genes, deg_list,
                         gene_col, logFC_col, pvalue_col, direction,
-                        min_genes=50, max_genes=3000, p_cut=0.01){
-    #Rank based on fold-change
-    #direction = "up" or "down"
-    #Top number of genes
-    #top_n = "3000"
-    #Minimum number of genes
-    #min_genes = "50"
-    #Max number of genes
-    #max_genes = "3000"
-    #Adj P-value cutoff for ORA results. Remove pathways not significant in any round
-    #p_cut = 0.01
-    #Order Merge Table by
-    #order_p = "NG", "p", "P", "first", "times", "ES3"
+                        min_genes, max_genes, p_cut){
+
     if(tolower(direction) == "up"){
         top <- deg_list[head(order(deg_list[, logFC_col], decreasing=TRUE), n=max_genes), ]
     }else if(tolower(direction) == "down"){
@@ -133,15 +125,11 @@ NULL
 
     for (i in seq(from=min_genes, to=max_genes, by=50)) {
         top_genes  <- as.character(top[1:i, gene_col])
-          pathG <- .run_enrich(top_genes, all_genes, term2gene)
-          colnames(pathG) <- c("term",  i)
+        pathG <- .run_enrich(top_genes, all_genes, term2gene)
+        colnames(pathG) <- c("term",  i)
 
-
-          merge_p <- merge(merge_p,
-                      pathG,
-                      by="term",
-                      all=TRUE)
-          merge_p[is.na(merge_p)] <- 1
+        merge_p <- merge(merge_p, pathG, by="term", all=TRUE)
+        merge_p[is.na(merge_p)] <- 1
     }
     rownames(merge_p) <- merge_p[, 1]
     merge_p           <- merge_p[, -1]
@@ -188,11 +176,12 @@ NULL
 #' This function takes a table and returns a dataframe with
 #' several different types of information about pathways.
 #'
-#' @param path_table A table with some kind of information.
-#' @param p_cut P-value cut.
-#' @param direction The direction.
+#' @param path_table A table with pathway information.
+#' @param p_cut P-value cut
+#' @param direction The direction
 #'
 #' @keywords internal
+#' @noRd
 
 .cutoff_path <- function(path_table, p_cut, direction){
     df <- data.frame(matrix(0, nrow=ncol(path_table), ncol=0))
@@ -204,9 +193,9 @@ NULL
     #How many pathways above path_cut_p (freq)
     df$times <- as.numeric(apply(path_table, 2,
                                function(x) length(which(x > path_cut_p))))/nrow(path_table)
-    colnames(df) <- c(paste("maximum_MinuslogP", "_", direction, sep=""),
-                    paste("sum_MinuslogP", "_", direction, sep=""),
-                    paste("times_significant", "_", direction, sep=""))
+    colnames(df) <- c(paste0("maximum_MinuslogP_", direction),
+                    paste0("sum_MinuslogP_", direction),
+                    paste0("times_significant_", direction))
     return(df)
 }
 

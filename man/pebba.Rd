@@ -10,7 +10,7 @@ pebba(file_in, gmt_file, gene_col = "Gene.symbol", logFC_col = "logFC",
   results_dir = "Results", force = FALSE)
 }
 \arguments{
-\item{file_in}{The file to execute the analysis}
+\item{file_in}{The file or data.frame to execute the analysis on}
 
 \item{gmt_file}{The name of the gmt file containing terms and genes}
 
@@ -30,7 +30,8 @@ values (Default: "logFC").}
 \item{verbose}{Logical. If TRUE (default), will display analysis progress messages.}
 
 \item{analysis_name}{The name to give to analysis results.
-(Defaults to parameter \code{file_in} without the extensions and file path)}
+(If NULL, defaults to parameter \code{file_in} without the extensions and file path;
+if a data.frame, defaults to 'PEBBA_analysis' when left NULL)}
 
 \item{results_dir}{The path into which results should be saved (Default: "Results").}
 
@@ -45,6 +46,6 @@ This function executes the PEBBA analysis.
 \examples{
 # Run PEBBA analyses
 data(example_data)
-gmt_fname <- system.file("extdata", "pathways.gmt", package = "PEBBA")
-pebba(example_data, gmt_fname)
+gmt_file <- system.file("extdata", "pathways.gmt", package = "PEBBA")
+pebba(example_data, gmt_file)
 }
