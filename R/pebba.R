@@ -42,27 +42,27 @@ NULL
 
     res <- lapply(dirs, function(direction){
 
-    decreasing <- ifelse(direction == "down", FALSE, TRUE)
+        decreasing <- ifelse(direction == "down", FALSE, TRUE)
 
-    top <- deg_list[head(order(deg_list[, logFC_col],
-                               decreasing=decreasing),
-                         n=max_genes),
-                    c(logFC_col, pvalue_col)]
-    #Add pi_value
-    top$pi_value <- abs(top[, logFC_col]) * -log10(top[, pvalue_col])
-    #Order pi_value
-    top <- top[order(top$pi_value, decreasing=TRUE), ]
-    df1 <- data.frame(matrix(0, nrow=0, ncol=4))
-    for (i in seq(from=min_genes, to=max_genes, by=50)) {
-        top_genes  <- top[1:i, ]
-        minFC <- min(abs(top_genes[, 1]))
-        maxP  <- max(top_genes[, 2])
-        minP  <- -log10(maxP)
-        minPi <- min(top_genes[i, 3])
-        rowX  <- c(minFC, minP, minPi)
-        df1 <- rbind(df1,rowX)
-    }
-    df1
+        top <- deg_list[head(order(deg_list[, logFC_col],
+                                   decreasing=decreasing),
+                             n=max_genes),
+                        c(logFC_col, pvalue_col)]
+        #Add pi_value
+        top$pi_value <- abs(top[, logFC_col]) * -log10(top[, pvalue_col])
+        #Order pi_value
+        top <- top[order(top$pi_value, decreasing=TRUE), ]
+        df1 <- data.frame(matrix(0, nrow=0, ncol=4))
+        for (i in seq(from=min_genes, to=max_genes, by=50)) {
+            top_genes  <- top[1:i, ]
+            minFC <- min(abs(top_genes[, 1]))
+            maxP  <- max(top_genes[, 2])
+            minP  <- -log10(maxP)
+            minPi <- min(top_genes[i, 3])
+            rowX  <- c(minFC, minP, minPi)
+            df1 <- rbind(df1,rowX)
+        }
+        df1
     })
     names(res) <- dirs
     top_cut <- seq(from=min_genes, to=max_genes, by=50)

@@ -23,7 +23,7 @@ NULL
 #' @return Tables and interactive heatmaps with PEBBA results
 #'
 #' @rdname pebba
-#' @examples 
+#' @examples
 #' # Run PEBBA analyses
 #' data(example_data)
 #' gmt_fname <- system.file("extdata", "pathways.gmt", package = "PEBBA")
@@ -66,7 +66,7 @@ pebba <- function(file_in, gmt_file, gene_col="Gene.symbol",
     }
 
     if(is.null(analysis_name)){
-        analysis_name <- tools::file_path_sans_ext(basename(file_in))
+        analysis_name <- "PEBBA_analysis"
     }
 
     ## Get information from all unique terms
@@ -76,9 +76,21 @@ pebba <- function(file_in, gmt_file, gene_col="Gene.symbol",
 
     merge_p  <-  data.frame(unique(term2gene[1]))
 
-    deg_list <- read.csv(file_in, header = TRUE, sep = "\t")
+    if(is.character(file_in)){
+        deg_list <- read.csv(file_in, header = TRUE, sep = "\t")
+        if(is.null(analysis_name)){
+            analysis_name <- tools::file_path_sans_ext(basename(file_in))
+        }
+    }else if(is.data.frame(file_in)){
+        deg_list <- file_in
+    }
+
     ## Remove rows that do not have a valid gene symbol
     deg_list <- deg_list[which(deg_list[, gene_col]!=""), ]
+    ## Make logFC and p-value columns numeric
+    deg_list[, logFC_col] <- as.numeric(deg_list[, logFC_col])
+    deg_list[, pvalue_col] <- as.numeric(deg_list[, pvalue_col])
+
     ## Get background genes as a character vector
     ## Empty values (non-annotated genes) will be removed
     all_genes <- as.character(deg_list[, gene_col])
@@ -96,7 +108,7 @@ pebba <- function(file_in, gmt_file, gene_col="Gene.symbol",
         if(verbose) message("Getting pathways")
         list_p <- .get_pathway(merge_p, term2gene, all_genes,
                             deg_list, gene_col, logFC_col,
-                            pvalue_col, direction, 
+                            pvalue_col, direction,
                             min_genes, max_genes, p_cut)
 
         df <- list_p[[1]]
