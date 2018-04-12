@@ -35,3 +35,69 @@ pebba(example_data, gmt_fname)
 ```
 
 That's it! PEBBA will create a folder in the working directory containing tables with the enrichment results and interactive heatmaps which can be used to obtain different information about each pathway.
+
+# Output tables
+PEBBA produces 5 output tables, each with several columns. Let's go over each table.
+
+## PathwayUp, PathwayDown and PathwayAny tables
+These tables show the -log10 adjusted p-value of the pathway enrichment analysis, as provided by the [clusterProfiler](https://www.bioconductor.org/packages/release/bioc/html/clusterProfiler.html) R package. Each row represents a particular pathway, and each column is the cutoff number of genes with which the enrichment analysis was run. The table is ordered by the pathways in which significant enrichment occurred with lower cutoff gene values. 
+
+The PathwayUp table shows the results of enriching when the DEG list is in decreasing order of p-values, and conversely for the PathwayDown table. For the PathwayAny table, the DEG list is ordered in increasing order of the absolute p-values.
+
+## Cutoffs table
+This table provides information about each cutoff.
+-TopCut: The cutoff number of genes
+-minimum\_log2fc\_\<direction\>: The lowest log2 fold-change value in that direction for each cutoff. 
+-minimum\_MinuslogP_\<direction\>: The -log10 of the largest p-value in that direction for each cutoff.
+-minimum\_Pi\_\<direction\>: The lowest pi-value in that direction for each cutoff.  
+
+-minimum\_log2fc\_combined: The lowest log2 fold-change value in any direction for each cutoff.
+-minimum\_MinuslogP\_combined: The -log10 of the largest p-value in any direction for each cutoff.
+-minimum\_Pi\_combined: The lowest pi-value in any direction for each cutoff.
+
+-maximum\_MinuslogP\_\<direction\>: The largest -log10 of the adjusted p-value in that direction for each cutoff.
+-sum\_MinuslogP\_\<direction\>: The sum of -log10 of the adjusted p-values in that direction for each cutoff.
+-times\_significant\_\<direction\>: The proportion of significant pathways in that direction for each cutoff.
+
+-maximum\MinuslogP\_meanUPandDOWN: The mean value of the largest -log10 of the adjusted p-value across both directions for each cutoff. This is the pairwise mean of the "maximum\_MinuslogP\_up" and the "maximum\_MinuslogP\_down" columns.
+-sum\_MinuslogP\_meanUPandDOWN: The mean value of the sum of -log10 of the adjusted p-values across both directions for each cutoff. This is the pairwise mean of the "sum\_MinuslogP\_up" and "sum\_MinuslogP\down" columns.
+-times\_significant\_meanUPandDOWN: The mean value of the proportion of significant pathways across both directions for each cutoff. This is the pairwise mean of the "times\_significant\_up" and the "times\_significant\_down" columns.
+
+## Pathway Metrics table
+This table returns information about each pathway.
+-Pathways: Each pathway in the inserted gmt file.
+-TopCut\_highestMinuslogP\_meanUPandDOWN: For each pathway, the mean across both directions of which gene number cutoff provided the largest -log10 adjusted p-value.
+-maximum\_MinuslogP\_meanUPandDOWN: For each pathway, the mean across both directions of the largest of the -log10 adjusted p-values.
+-sum\_MinuslogP\_meanUPandDOWN: For each pathway, the mean across both directions of the sum of the -log10 adjusted p-values. 
+-times\_significant\_meanUPandDOWN: For each pathway, the mean across both directions of the proportion of columns above the significance cutoff. 
+-FirstTopCut\_significant\_meanUPandDOWN: For each pathway, the mean across both directions of the first gene number cutoff value in which the pathway was above the significance cutoff. A value of 0 indicates the pathway never surpassed the significance cutoff. 
+-PEBBA\_score\_meanUPandDOWN: For each pathway, the mean across both directions of the PEBBA score. 
+
+
+-TopCut\_highestMinuslogP\_minUPandDOWN: For each pathway, the minimum value across both directions of which gene number cutoff provided the largest -log10 adjusted p-value.
+-maximum\_MinuslogP\_maxUPandDOWN: For each pathway, the maximum value across both directions of the largest of the -log10 adjusted p-values.
+-sum\_MinuslogP\_maxUPandDOWN: For each pathway, the maximum value across both directions of the sum of the -log10 adjusted p-values. 
+-times\_significant\_maxUPandDOWN: For each pathway, the maximum value across both directions of the proportion of columns above the significance cutoff. 
+-FirstTopCut\_significant\_minUPandDOWN: For each pathway, the minimum value across both directions of the first gene number cutoff value in which the pathway was above the significance cutoff. A value of 0 indicates the pathway never surpassed the significance cutoff. 
+-PEBBA\_score\_maxUPandDOWN: For each pathway, the maximum value across both directions of the PEBBA score. 
+
+
+-TopCut\_highestMinuslogP\_\<direction\>: For each pathway, which gene number cutoff provided the largest -log10 adjusted p-value in that direction.
+-maximum\_MinuslogP\_\<direction\>: For each pathway, the largest of the -log10 adjusted p-values in that direction..
+-sum\_MinuslogP\_\<direction\>: For each pathway, the sum of the -log10 adjusted p-values in that direction.. 
+-times\_significant\_\<direction\>: For each pathway, the proportion of columns above the significance cutoff in that direction. 
+-FirstTopCut\_significant\_\<direction\>: For each pathway, the first gene number cutoff value in which the pathway was above the significance cutoff. A value of 0 indicates the pathway never surpassed the significance cutoff. 
+-PEBBA\_score\_\<direction\>: For each pathway, the maximum value across both directions of the PEBBA score. 
+
+
+
+
+
+
+
+
+
+
+
+
+
