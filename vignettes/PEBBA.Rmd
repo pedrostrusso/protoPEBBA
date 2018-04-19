@@ -60,7 +60,7 @@ This table provides information about each cutoff.
 - __sum\_MinuslogP\_*\<direction\>*__: The sum of -log10 of the adjusted p-values in that direction for each cutoff.  
 - __times\_significant\_*\<direction\>*__: The proportion of significant pathways in that direction for each cutoff.  
 
-- __maximum\MinuslogP\_meanUPandDOWN__: The mean value of the largest -log10 of the adjusted p-value across both directions for each cutoff. This is the pairwise mean of the "maximum\_MinuslogP\_up" and the "maximum\_MinuslogP\_down" columns.  
+- __maximum\_MinuslogP\_meanUPandDOWN__: The mean value of the largest -log10 of the adjusted p-value across both directions for each cutoff. This is the pairwise mean of the "maximum\_MinuslogP\_up" and the "maximum\_MinuslogP\_down" columns.  
 - __sum\_MinuslogP\_meanUPandDOWN__: The mean value of the sum of -log10 of the adjusted p-values across both directions for each cutoff. This is the pairwise mean of the "sum\_MinuslogP\_up" and "sum\_MinuslogP\down" columns.  
 - __times\_significant\_meanUPandDOWN__: The mean value of the proportion of significant pathways across both directions for each cutoff. This is the pairwise mean of the "times\_significant\_up" and the "times\_significant\_down" columns.  
 
