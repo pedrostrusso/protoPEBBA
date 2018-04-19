@@ -49,7 +49,7 @@ This table provides information about each cutoff.
 
 - __TopCut__: The cutoff number of genes.    
 - __minimum\_log2fc\_*\<direction\>*__: The lowest log2 fold-change value in that direction for each cutoff.  
-- __minimum\_MinuslogP_*\<direction\>*__: The -log10 of the largest p-value in that direction for each cutoff.  
+- __minimum\_MinuslogP\_*\<direction\>*__: The -log10 of the largest p-value in that direction for each cutoff.  
 - __minimum\_Pi\_*\<direction\>*__: The lowest pi-value in that direction for each cutoff.  
 
 - __minimum\_log2fc\_combined__: The lowest log2 fold-change value in any direction for each cutoff.  
